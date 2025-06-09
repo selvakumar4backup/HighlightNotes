@@ -702,6 +702,10 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
   }
   
   function hexToRgba(hex, alpha = 1) {
+    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length < 7) {
+      // fallback to a default color, e.g. transparent or gray
+      return `rgba(0,0,0,${alpha})`;
+    }
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -1078,13 +1082,36 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
       )}
 
       {isSelectionDialogOpen && (
-       <HighlightDialog
-  isSelectionDialogOpen={isSelectionDialogOpen}
-  setIsSelectionDialogOpen={setIsSelectionDialogOpen}
-  selectionNoteContent={selectionNoteContent}
-  setSelectionNoteContent={setSelectionNoteContent}
-  onNewNote={onNewNote}
-/>
+        <HighlightDialog
+          isSelectionDialogOpen={isSelectionDialogOpen}
+          draggableRef={draggableRef}
+          popupTabValue={popupTabValue}
+          setPopupTabValue={setPopupTabValue}
+          highlights={notes}
+          selectedSection={selectedSection}
+          selectedSidebarTab={selectedSidebarTab}
+          sectionColor={sectionColor}
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+          selectionNoteContent={selectionNoteContent}
+          setSelectionNoteContent={setSelectionNoteContent}
+          setNotes={setNotes}
+          setIsSelectionDialogOpen={setIsSelectionDialogOpen}
+          setIsExpanded={setIsExpanded}
+          isExpanded={isExpanded}
+          noteContent={noteContent}
+          setNoteContent={setNoteContent}
+          handleSaveNote={handleSaveNote}
+          Tiptap={Tiptap}
+          expandIcon={expandIcon}
+          collapseIcon={collapseIcon}
+          highlight_img={highlight_img}
+          selectedhilight_alt={selectedhilight_alt}
+          vector_img={vector_img}
+          selectedvector={selectedvector}
+          hexToRgba={hexToRgba}
+          onNewNote={onNewNote}
+        />
       )}
     </>
   );
