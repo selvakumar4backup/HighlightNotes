@@ -165,7 +165,6 @@ const HighlightDialog = forwardRef(({
 };
 
   const handleSelectionColor = (color) => {
-    // debugger
     setSelectedColor(color);
     let text = selectionNoteContent;
     if (!text) {
@@ -189,39 +188,18 @@ const HighlightDialog = forwardRef(({
       setSelectedColor(null);
       return;
     }
-    
+    // Prepare highlightSegments as before
     let highlightSegments = [];
-    const stored = localStorage.getItem('highlightedNotes') || '[]';
-    let parsed = [];
-    
-    try {
-      parsed = JSON.parse(stored);
-    } catch (e) {
-      console.error('Error parsing highlighted notes:', e);
-      parsed = [];
+    const mainContent = document.getElementById('main-content');
+    function getTextNodesInOrder(node) {
+      let textNodes = [];
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+      let n;
+      while ((n = walker.nextNode())) textNodes.push(n);
+      return textNodes;
     }
-
-     // Check if the text is already highlighted or overlaps with existing highlights
-    const existingHighlightIndex = parsed.findIndex(note => {
-      // Check for exact match or overlap
-      return note.content.includes(text) || text.includes(note.content);
-    });
-
-    if (existingHighlightIndex !== -1) {
-      const existingNote = parsed[existingHighlightIndex];
-      handleExistingHighlight(existingNote, color, text, selectedRange, parsed);
-      return;
-    }
+    const allTextNodes = getTextNodesInOrder(mainContent);
     if (startNode === endNode) {
-      const mainContent = document.getElementById('main-content');
-      function getTextNodesInOrder(node) {
-        let textNodes = [];
-        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        let n;
-        while ((n = walker.nextNode())) textNodes.push(n);
-        return textNodes;
-      }
-      const allTextNodes = getTextNodesInOrder(mainContent);
       const nodeIdx = allTextNodes.indexOf(startNode);
       highlightSegments.push({
         content: startNode.nodeValue.substring(range.startOffset, range.endOffset),
@@ -232,15 +210,6 @@ const HighlightDialog = forwardRef(({
         textNodeIndex: nodeIdx
       });
     } else {
-      const mainContent = document.getElementById('main-content');
-      function getTextNodesInOrder(node) {
-        let textNodes = [];
-        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        let n;
-        while ((n = walker.nextNode())) textNodes.push(n);
-        return textNodes;
-      }
-      const allTextNodes = getTextNodesInOrder(mainContent);
       let inRange = false;
       for (let nIdx = 0; nIdx < allTextNodes.length; nIdx++) {
         const n = allTextNodes[nIdx];
@@ -266,27 +235,85 @@ const HighlightDialog = forwardRef(({
         if (n === endNode) break;
       }
     }
-    // console.log('Highlight segments to save:', highlightSegments);
-    if (highlightSegments.length) {
-      setNotes((prevNotes) => {
-        const updated = [
-          ...prevNotes,
-          {
-            content: text,
-            highlightColor: color,
-            sectionColor: regionConfig[selectedSection].color,
-            section: selectedSection,
-            tab: selectedSidebarTab,
-            timestamp: new Date(),
-            note_section: 2,
-            note_type: 'Highlight',
-            highlightSegments,
-          },
-        ];
-        localStorage.setItem('highlightedNotes', JSON.stringify(updated));
-        return updated;
-      });
+    // --- Smart overlap/split logic ---
+    const stored = localStorage.getItem('highlightedNotes') || '[]';
+    let parsed = [];
+    try {
+      parsed = JSON.parse(stored);
+    } catch (e) {
+      parsed = [];
     }
+    // Only process highlights in the same section/tab
+    let newParsed = [];
+    highlightSegments.forEach(newSeg => {
+      // For each new segment, process all existing highlights
+      parsed.forEach(note => {
+        if (note.section !== selectedSection || note.tab !== selectedSidebarTab) {
+          newParsed.push(note);
+          return;
+        }
+        // For each segment in the note
+        let didSplit = false;
+        (note.highlightSegments || []).forEach(seg => {
+          if (seg.textNodeIndex !== newSeg.textNodeIndex) {
+            // Different node, keep as is
+            if (!didSplit) newParsed.push({ ...note, highlightSegments: [seg] });
+            else newParsed[newParsed.length - 1].highlightSegments.push(seg);
+            return;
+          }
+          // Check for overlap
+          const overlap = !(newSeg.endOffset <= seg.startOffset || newSeg.startOffset >= seg.endOffset);
+          if (!overlap) {
+            // No overlap, keep as is
+            if (!didSplit) newParsed.push({ ...note, highlightSegments: [seg] });
+            else newParsed[newParsed.length - 1].highlightSegments.push(seg);
+            return;
+          }
+          // If overlap, split existing segment if needed
+          didSplit = true;
+          // Before part
+          if (seg.startOffset < newSeg.startOffset) {
+            const beforeSeg = {
+              ...seg,
+              content: startNode.nodeValue.substring(seg.startOffset, newSeg.startOffset),
+              endOffset: newSeg.startOffset
+            };
+            newParsed.push({
+              ...note,
+              highlightSegments: [beforeSeg]
+            });
+          }
+          // After part
+          if (seg.endOffset > newSeg.endOffset) {
+            const afterSeg = {
+              ...seg,
+              content: startNode.nodeValue.substring(newSeg.endOffset, seg.endOffset),
+              startOffset: newSeg.endOffset
+            };
+            newParsed.push({
+              ...note,
+              highlightSegments: [afterSeg]
+            });
+          }
+          // Do not keep the overlapping part
+        });
+      });
+    });
+    // Add the new highlight
+    const newHighlight = {
+      content: text,
+      highlightColor: color,
+      sectionColor: regionConfig[selectedSection].color,
+      section: selectedSection,
+      tab: selectedSidebarTab,
+      timestamp: new Date(),
+      note_section: 2,
+      note_type: 'Highlight',
+      highlightSegments,
+    };
+    newParsed.push(newHighlight);
+    localStorage.setItem('highlightedNotes', JSON.stringify(newParsed));
+    setNotes(newParsed);
     if (typeof onNewNote === 'function') onNewNote();
     setSelectedColor(null);
     setIsSelectionDialogOpen(false);
