@@ -32,6 +32,7 @@ const NoteList = ({ notes, tabValue }) => {
               cursor: 'default',
               fontFamily: 'Work Sans, sans-serif',
               boxShadow: 'none',
+              overflow: 'auto',
             }}
           >
             <Box mb={1} sx={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
