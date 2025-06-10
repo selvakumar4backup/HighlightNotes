@@ -34,7 +34,7 @@ const NoteList = ({ notes, tabValue }) => {
               boxShadow: 'none',
             }}
           >
-            <Box mb={1}>
+            <Box mb={1} sx={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               <Typography
                 variant="body1"
                 sx={{
@@ -44,6 +44,8 @@ const NoteList = ({ notes, tabValue }) => {
                   letterSpacing: 0,
                   lineHeight: '20px',
                   color: '#454545',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
                 }}
                 dangerouslySetInnerHTML={{ __html: note.content }}
               />
