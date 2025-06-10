@@ -505,6 +505,7 @@ const HighlightDialog = forwardRef(({
               flexDirection: 'column',
               justifyContent: 'center', // Center content vertically
               mt: 1.1,
+              paddingBottom:3.5
             }}
           >
             <Box mt={4.5}>
