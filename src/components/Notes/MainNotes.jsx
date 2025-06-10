@@ -1,22 +1,13 @@
 // Notes.js
-import React, { useState, useRef, useEffect, forwardRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect,  } from 'react';
 import {
   Box,
   Typography,
   IconButton,
-  Button,
-  Tabs,
-  Tab,
   Popper,
   Paper,
-  Dialog,
-  ClickAwayListener,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import Draggable from 'react-draggable';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -95,19 +86,6 @@ const regionConfig = {
   },
 };
 
-// Configure the image resize extension
-const imageResizeConfig = {
-  inline: true,
-  allowBase64: true,
-  HTMLAttributes: {
-    class: 'resizable-image',
-  },
-  defaultWidth: 300,
-  onResize: (img) => {
-    // Optional: Add any custom behavior when resizing is done
-    // console.log('Image resized to:', img.style.width, 'x', img.style.height);
-  },
-};
 
 // Function to handle image paste
 const handleImagePaste = (view, event, editor) => {
@@ -399,205 +377,13 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
   setSelectedColor(regionConfig[selectedSection].color);
 }, [selectedSection]);
 
-  const handleSelectionColor = (color) => {
-    setSelectedColor(color);
-    let text = selectionNoteContent;
-    if (!text) {
-      setIsSelectionDialogOpen(false);
-      setSelectionNoteContent('');
-      return;
-    }
-    if (color === null) {
-      setIsSelectionDialogOpen(false);
-      setSelectionNoteContent('');
-      setSelectedColor(null);
-      return;
-    }
-    const range = selectedRange;
-    if (!range) return;
-    let startNode = range.startContainer.nodeType === 3 ? range.startContainer : getFirstTextNode(range.startContainer);
-    let endNode = range.endContainer.nodeType === 3 ? range.endContainer : getFirstTextNode(range.endContainer);
-    if (!startNode || !endNode || (range.startOffset === 0 && range.endOffset === 0)) {
-      setIsSelectionDialogOpen(false);
-      setSelectionNoteContent('');
-      setSelectedColor(null);
-      return;
-    }
-    
-    let highlightSegments = [];
-    const stored = localStorage.getItem('highlightedNotes') || '[]';
-    let parsed = [];
-    
-    try {
-      parsed = JSON.parse(stored);
-    } catch (e) {
-      console.error('Error parsing highlighted notes:', e);
-      parsed = [];
-    }
-
-     // Check if the text is already highlighted or overlaps with existing highlights
-    const existingHighlightIndex = parsed.findIndex(note => {
-      // Check for exact match or overlap
-      return note.content.includes(text) || text.includes(note.content);
-    });
-
-    if (existingHighlightIndex !== -1) {
-      const existingNote = parsed[existingHighlightIndex];
-      handleExistingHighlight(existingNote, color, text, selectedRange, parsed);
-      return;
-    }
-    if (startNode === endNode) {
-      const mainContent = document.getElementById('main-content');
-      function getTextNodesInOrder(node) {
-        let textNodes = [];
-        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        let n;
-        while ((n = walker.nextNode())) textNodes.push(n);
-        return textNodes;
-      }
-      const allTextNodes = getTextNodesInOrder(mainContent);
-      const nodeIdx = allTextNodes.indexOf(startNode);
-      highlightSegments.push({
-        content: startNode.nodeValue.substring(range.startOffset, range.endOffset),
-        startXPath: getXPathForNode(startNode),
-        startOffset: range.startOffset,
-        endXPath: getXPathForNode(endNode),
-        endOffset: range.endOffset,
-        textNodeIndex: nodeIdx
-      });
-    } else {
-      const mainContent = document.getElementById('main-content');
-      function getTextNodesInOrder(node) {
-        let textNodes = [];
-        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        let n;
-        while ((n = walker.nextNode())) textNodes.push(n);
-        return textNodes;
-      }
-      const allTextNodes = getTextNodesInOrder(mainContent);
-      let inRange = false;
-      for (let nIdx = 0; nIdx < allTextNodes.length; nIdx++) {
-        const n = allTextNodes[nIdx];
-        if (n === startNode) inRange = true;
-        if (inRange) {
-          let s = 0, e = n.length;
-          if (n === startNode) s = range.startOffset;
-          if (n === endNode) e = range.endOffset;
-          if (s < e) {
-            const nodeText = n.nodeValue.substring(s, e);
-            if (nodeText.trim()) {
-              highlightSegments.push({
-                content: nodeText,
-                startXPath: getXPathForNode(n),
-                startOffset: s,
-                endXPath: getXPathForNode(n),
-                endOffset: e,
-                textNodeIndex: nIdx
-              });
-            }
-          }
-        }
-        if (n === endNode) break;
-      }
-    }
-    // console.log('Highlight segments to save:', highlightSegments);
-    if (highlightSegments.length) {
-      setNotes((prevNotes) => {
-        const updated = [
-          ...prevNotes,
-          {
-            content: text,
-            highlightColor: color,
-            sectionColor: regionConfig[selectedSection].color,
-            section: selectedSection,
-            tab: selectedSidebarTab,
-            timestamp: new Date(),
-            note_section: 2,
-            note_type: 'Highlight',
-            highlightSegments,
-          },
-        ];
-        localStorage.setItem('highlightedNotes', JSON.stringify(updated));
-        return updated;
-      });
-    }
-    if (typeof onNewNote === 'function') onNewNote();
-    setSelectedColor(null);
-    setIsSelectionDialogOpen(false);
-    setSelectionNoteContent('');
-    setSelectedRange(null);
-  };
-
-  // Handle existing highlight logic with section-based filtering
-  const handleExistingHighlight = (existingNote, color, text, selectedRange, parsed) => {
-    try {
-        // Find the index of the note that matches the current selection
-        const noteIndex = parsed.findIndex(note => {
-            // Match based on content and position
-            return note.content === existingNote.content && 
-                   note.section === selectedSection && 
-                   note.tab === selectedSidebarTab;
-        });
-
-        // Create the updated note with new color
-        const updatedNote = {
-            ...existingNote,
-            highlightColor: color,
-            section: selectedSection,
-            tab: selectedSidebarTab,
-            updatedAt: new Date().toISOString()
-        };
-
-        let updatedNotes;
-        
-        if (noteIndex !== -1) {
-            // If note exists, update it
-            updatedNotes = [...parsed];
-            updatedNotes[noteIndex] = updatedNote;
-        } else {
-            // If note doesn't exist, add it
-            updatedNotes = [...parsed, updatedNote];
-        }
-
-        // Update localStorage
-        localStorage.setItem('highlightedNotes', JSON.stringify(updatedNotes));
-        
-        // Update React state
-        setNotes(updatedNotes);
-
-        // Update the DOM
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            // Find and update the specific highlight in the DOM
-            const highlightSpans = mainContent.querySelectorAll('span[data-highlighted="true"]');
-            highlightSpans.forEach(span => {
-                if (span.textContent === existingNote.content) {
-                    // Update the highlight color
-                    span.style.backgroundColor = color;
-                }
-            });
-        }
-
-        // Update UI state
-        setSelectedColor(color);
-        setIsSelectionDialogOpen(false);
-        setSelectionNoteContent('');
-        setSelectedRange(null);
-
-    } catch (error) {
-        console.error('Error updating highlight:', error);
-    }
-};
-
   // Render the main content area with notes
   useEffect(() => {
   // console.log('Notes component mounted 5');
 
-  const storedNotes = localStorage.getItem('notes');
   const storedHighlights = localStorage.getItem('highlightedNotes');
 
   try {
-    const parsedNotes = storedNotes ? JSON.parse(storedNotes) : [];
     const parsedHighlights = storedHighlights ? JSON.parse(storedHighlights) : [];
 
     // console.log('Parsed notes:', parsedNotes);
@@ -648,44 +434,6 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
     mainContent.normalize();
   }
 
-  function getFirstTextNode(node) {
-    if (!node) return null;
-    if (node.nodeType === 3) return node;
-    for (let child of node.childNodes) {
-      const found = getFirstTextNode(child);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  function getXPathForNode(node, root = document.body) {
-    if (node.nodeType === 3) {
-      const parent = node.parentNode;
-      const textNodes = Array.from(parent.childNodes).filter(n => n.nodeType === 3);
-      const idx = textNodes.indexOf(node) + 1;
-      return getXPathForNode(parent, root) + '/text()[' + idx + ']';
-    }
-    const idx = (sib, name) => sib
-      ? idx(sib.previousElementSibling, name || sib.localName) + (sib.localName === name)
-      : 1;
-    const segs = [];
-    for (; node && node !== root; node = node.parentNode) {
-      if (node.nodeType === 1) {
-        let s = node.localName.toLowerCase();
-        if (node.id) {
-          s += '[@id="' + node.id + '"]';
-          segs.unshift(s);
-          break;
-        } else {
-          const i = idx(node);
-          if (i > 1) s += '[' + i + ']';
-        }
-        segs.unshift(s);
-      }
-    }
-    return segs.length ? '/' + segs.join('/') : null;
-  }
-
   function getElementByXPath(xpath, parent = document) {
     try {
       return document.evaluate(
@@ -710,33 +458,6 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  function getTextNodeFromXPathAndOffset(xpath, offset, matchText) {
-    const node = getElementByXPath(xpath);
-    if (!node) return null;
-    if (node.nodeType === 3) return node;
-    let walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-    let textNode;
-    let total = 0;
-    while ((textNode = walker.nextNode())) {
-      if (typeof offset === 'number' && offset < total + textNode.length) {
-        return textNode;
-      }
-      if (matchText && textNode.nodeValue.includes(matchText)) {
-        return textNode;
-      }
-      total += textNode.length;
-    }
-    return null;
-  }
-
-  function getParentXPath(xpath) {
-    if (!xpath) return null;
-    const parts = xpath.split('/');
-    if (parts.length <= 2) return '/';
-    parts.pop();
-    return parts.join('/');
   }
 
   function applyHighlightsToMainContent(notes) {
@@ -1111,6 +832,9 @@ const Notes = ({ anchorEl, open, onClose, selectedSection, selectedSidebarTab, o
           selectedvector={selectedvector}
           hexToRgba={hexToRgba}
           onNewNote={onNewNote}
+          setIsDialogOpen={setIsDialogOpen}
+          selectedRange={selectedRange}
+          setSelectedRange={setSelectedRange}
         />
       )}
     </>

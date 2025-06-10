@@ -244,80 +244,8 @@ function App() {
 };
 
 
-// const handleNavigation = (direction) => {
-//   const currentSectionIdx = sectionOrder.indexOf(selectedSection);
-//   const currentTabIdx = tabs.indexOf(selectedSidebarTab);
-
-//   if (direction === 'back') {
-//     if (currentTabIdx > 0) {
-//       // Navigate to the previous tab in the current section
-//       const prevTab = tabs[currentTabIdx - 1];
-//       setSelectedSidebarTab(prevTab);
-//       setSidebarTabState((prev) => ({
-//         ...prev,
-//         [selectedSection]: { ...prev[selectedSection], [prevTab]: true },
-//       }));
-//     } else if (currentTabIdx === 0 && currentSectionIdx > 0) {
-//       // Reset the current section's sidebar tabs
-//       resetSidebarTabs(selectedSection);
-
-//       // Reset the current section's viewed status
-//       setViewedSections((prev) => ({
-//         ...prev,
-//         [selectedSection]: false,
-//       }));
-
-//       // Navigate to the previous section and select its last tab
-//       const prevSection = sectionOrder[currentSectionIdx - 1];
-//       const prevTabs = regionConfig[prevSection].tabs;
-//       // const lastTab = prevTabs[prevTabs.length - 1];
-//       const firstTab = prevTabs[0];
-
-//       // Reset the previous section's sidebar tabs
-//       resetSidebarTabs(prevSection);
-
-//       setSelectedSection(prevSection);
-//       setSelectedSidebarTab(firstTab);
-//       setSidebarTabState((prev) => ({
-//         ...prev,
-//         [prevSection]: { ...prev[prevSection], [firstTab]: true },
-//       }));
-//     }
-//   } else if (direction === 'next') {
-//     if (currentTabIdx < tabs.length - 1) {
-//       // Navigate to the next tab in the current section
-//       const nextTab = tabs[currentTabIdx + 1];
-//       setSelectedSidebarTab(nextTab);
-//       setSidebarTabState((prev) => ({
-//         ...prev,
-//         [selectedSection]: { ...prev[selectedSection], [nextTab]: true },
-//       }));
-//     } else if (currentTabIdx === tabs.length - 1 && currentSectionIdx < sectionOrder.length - 1) {
-//       // Reset the current section's sidebar tabs
-//       resetSidebarTabs(selectedSection);
-
-//       // Mark the current section as viewed
-//       setViewedSections((prev) => ({
-//         ...prev,
-//         [selectedSection]: true,
-//       }));
-
-//       // Navigate to the next section and select its first tab
-//       const nextSection = sectionOrder[currentSectionIdx + 1];
-//       const firstTab = regionConfig[nextSection].tabs[0];
-
-//       setSelectedSection(nextSection);
-//       setSelectedSidebarTab(firstTab);
-//       setSidebarTabState((prev) => ({
-//         ...prev,
-//         [nextSection]: { ...prev[nextSection], [firstTab]: true },
-//       }));
-//     }
-//   }
-// };
-
   return (
-    <div className="flex flex-col h-screen w-full" style={{ minWidth: 1024, minHeight: 703, maxWidth: 1024, maxHeight: 703, width: 1024, height: 703, margin: '0 auto', position: 'relative' }}>
+    <div id='main-content' className="flex flex-col h-screen w-full" style={{ minWidth: 1024, minHeight: 703, maxWidth: 1024, maxHeight: 703, width: 1024, height: 703, margin: '0 auto', position: 'relative' }}>
       <Box sx={{ p: 2, fontFamily: 'Work Sans, sans-serif', height: 703, minHeight: 703, minWidth: 1024, maxWidth: 1024, width: 1024, boxSizing: 'border-box', pb: '84px' }}>
         <Box position="relative" display="flex" alignItems="center" sx={{ borderBottom: '1px solid #D4D4D4', width: 1024, maxWidth: 1024, minWidth: 1024, height: 72 }}>
           <Typography variant="h1" sx={{ fontSize:  '1.125rem',fontWeight:500 ,fontFamily: 'Work Sans, sans-serif', 
