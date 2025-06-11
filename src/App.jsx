@@ -19,6 +19,7 @@ import Summary from './components/Sections/Decision/Summary';
 import Instruction from './components/Sections/Instruction/Instruction';
 import TakeExam from './components/Sections/Decision/TakeExam';
 import NavigationControls from './components/NavigationControls/NavigationControls';
+import TextHighlighter from './components/Notes/TextHighlighter';
 
 const regionConfig = {
   instruction: {
@@ -309,7 +310,7 @@ function App() {
                         setSelectedSidebarTab={setSelectedSidebarTab}
                         regionConfig={regionConfig}
                       />
-                      
+                      // <TextHighlighter />
                     )}
               </Box>
             </Paper>
